@@ -1,0 +1,2016 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Downloader</title>
+    <style>
+      :root {
+        --bg: #f2f4f3;
+        --surface: #fff;
+        --ink: #16211f;
+        --muted: #56645f;
+        --line: #d5dcd9;
+        --accent: #0f6b5c;
+        --accent-ink: #fff;
+        --bar: #e2e8e5;
+        --bad: #b42318;
+        --ok: #18794e;
+        --r: 10px;
+        --r-sm: 6px;
+        --s1: 0.5rem;
+        --s2: 1rem;
+        --s3: 1.5rem;
+        --font:
+          "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial,
+          sans-serif;
+        --tap: 46px;
+      }
+      :root[data-theme="dark"] {
+        --bg: #0f1514;
+        --surface: #172120;
+        --ink: #e8efed;
+        --muted: #9bada7;
+        --line: #2c3a37;
+        --accent: #3fc2a8;
+        --accent-ink: #06201b;
+        --bar: #26332f;
+        --bad: #ff8a7d;
+        --ok: #5ad39a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.5 var(--font);
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--line);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+      .bar {
+        max-width: 980px;
+        margin: auto;
+        padding: var(--s1) var(--s2);
+        display: flex;
+        align-items: center;
+        gap: var(--s2);
+        flex-wrap: wrap;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: var(--ink);
+        text-decoration: none;
+      }
+      nav {
+        display: flex;
+        gap: 0.25rem;
+        margin-left: auto;
+        overflow-x: auto;
+      }
+      nav a {
+        padding: 0.55rem 0.9rem;
+        border-radius: var(--r-sm);
+        color: var(--muted);
+        text-decoration: none;
+        font-weight: 600;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      nav a[aria-current="page"] {
+        background: var(--bar);
+        color: var(--ink);
+      }
+      .badge {
+        background: var(--accent);
+        color: var(--accent-ink);
+        border-radius: 99px;
+        font-size: 0.75rem;
+        padding: 0 0.45rem;
+      }
+      main {
+        max-width: 980px;
+        margin: auto;
+        padding: var(--s3) var(--s2) 4rem;
+      }
+      h1 {
+        font-size: clamp(2rem, 6vw, 3.1rem);
+        line-height: 1.1;
+        margin: 0.5rem 0;
+        letter-spacing: -0.02em;
+      }
+      h2 {
+        font-size: 1.25rem;
+        margin: var(--s3) 0 var(--s1);
+      }
+      .lead {
+        color: var(--muted);
+        margin: 0 0 var(--s3);
+        font-size: 1.1rem;
+      }
+      .field {
+        display: flex;
+        gap: var(--s1);
+        flex-wrap: wrap;
+      }
+      .field input {
+        flex: 1 1 280px;
+        min-height: var(--tap);
+        padding: 0 1rem;
+        border: 2px solid var(--line);
+        border-radius: var(--r);
+        background: var(--surface);
+        font-size: 1.05rem;
+      }
+      .field input:focus {
+        border-color: var(--accent);
+        outline: none;
+      }
+      .btn {
+        min-height: var(--tap);
+        padding: 0 1.1rem;
+        border-radius: var(--r);
+        border: 2px solid var(--line);
+        background: var(--surface);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn:hover {
+        border-color: var(--accent);
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-ink);
+      }
+      .btn.danger {
+        color: var(--bad);
+      }
+      .btn.sm {
+        min-height: 38px;
+        padding: 0 0.8rem;
+        border-radius: var(--r-sm);
+      }
+      .btn[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .hint {
+        min-height: 1.4rem;
+        margin: 0.4rem 0 0;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+      .hint.err {
+        color: var(--bad);
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        padding: var(--s2);
+      }
+      .media {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        gap: var(--s3);
+        margin-top: var(--s3);
+      }
+      @media (max-width: 760px) {
+        .media {
+          grid-template-columns: 1fr;
+        }
+      }
+      .thumb {
+        width: 100%;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        background: var(--bar);
+        border-radius: var(--r-sm);
+        display: block;
+      }
+      video.thumb,
+      audio {
+        width: 100%;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 0.93rem;
+      }
+      .title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0.6rem 0 0.2rem;
+        overflow-wrap: anywhere;
+      }
+      .desc {
+        color: var(--muted);
+        font-size: 0.93rem;
+        max-height: 4.6em;
+        overflow: hidden;
+      }
+      .opts {
+        display: grid;
+        gap: 0.4rem;
+        margin: var(--s1) 0 var(--s2);
+      }
+      .opt {
+        display: flex;
+        gap: 0.7rem;
+        align-items: center;
+        min-height: var(--tap);
+        padding: 0.4rem 0.8rem;
+        border: 2px solid var(--line);
+        border-radius: var(--r-sm);
+        cursor: pointer;
+      }
+      .opt:has(input:checked) {
+        border-color: var(--accent);
+        background: var(--bar);
+      }
+      .opts h3 {
+        margin: 0.5rem 0 0;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+      .skel {
+        background: linear-gradient(90deg, var(--bar), var(--line), var(--bar));
+        background-size: 200% 100%;
+        animation: sk 1.2s infinite;
+        border-radius: var(--r-sm);
+      }
+      @keyframes sk {
+        to {
+          background-position: -200% 0;
+        }
+      }
+      .dl {
+        display: grid;
+        grid-template-columns: 96px 1fr;
+        gap: var(--s2);
+        margin-bottom: var(--s1);
+      }
+      .dl img {
+        width: 96px;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        border-radius: var(--r-sm);
+        background: var(--bar);
+      }
+      .dl .nm {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+      .prog {
+        height: 10px;
+        background: var(--bar);
+        border-radius: 99px;
+        overflow: hidden;
+        margin: 0.5rem 0 0.3rem;
+      }
+      .prog > i {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+        width: 0;
+        transition: width 0.4s;
+      }
+      .prog.ind > i {
+        width: 40%;
+        animation: ind 1.1s infinite ease-in-out;
+      }
+      @keyframes ind {
+        from {
+          margin-left: -40%;
+        }
+        to {
+          margin-left: 100%;
+        }
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .status {
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
+      .status.failed,
+      .status.cancelled {
+        color: var(--bad);
+      }
+      .status.completed {
+        color: var(--ok);
+      }
+      .empty {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: var(--muted);
+        border: 2px dashed var(--line);
+        border-radius: var(--r);
+      }
+      .empty strong {
+        display: block;
+        color: var(--ink);
+        font-size: 1.1rem;
+        margin-bottom: 0.3rem;
+      }
+      .quick {
+        display: flex;
+        gap: var(--s1);
+        flex-wrap: wrap;
+        margin-top: var(--s2);
+      }
+      .set {
+        display: grid;
+        gap: 0.9rem;
+      }
+      .set label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--s2);
+        flex-wrap: wrap;
+      }
+      .set select,
+      .set input[type="text"],
+      .set input[type="url"] {
+        min-height: 40px;
+        border: 2px solid var(--line);
+        border-radius: var(--r-sm);
+        background: var(--surface);
+        padding: 0 0.6rem;
+      }
+      .res {
+        display: grid;
+        gap: var(--s1);
+      }
+      .res button {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: var(--s2);
+        text-align: left;
+        cursor: pointer;
+        width: 100%;
+      }
+      .res img {
+        width: 120px;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+        border-radius: var(--r-sm);
+      }
+      #toasts {
+        position: fixed;
+        bottom: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: grid;
+        gap: 0.5rem;
+        z-index: 20;
+        width: min(92vw, 420px);
+      }
+      .toast {
+        background: var(--ink);
+        color: var(--bg);
+        padding: 0.7rem 1rem;
+        border-radius: var(--r-sm);
+      }
+      .toast.err {
+        background: var(--bad);
+        color: #fff;
+      }
+      dialog {
+        border: 1px solid var(--line);
+        border-radius: var(--r);
+        background: var(--surface);
+        color: var(--ink);
+        max-width: 380px;
+      }
+      dialog::backdrop {
+        background: #0008;
+      }
+      :root {
+        --bg: #fff7f8;
+        --surface: #fff;
+        --ink: #29151b;
+        --muted: #805f69;
+        --line: #f0d6dd;
+        --accent: #e11d48;
+        --accent-ink: #fff;
+        --bar: #ffe7ed;
+        --bad: #c5163a;
+        --ok: #16845d;
+        --r: 10px;
+        --r-sm: 7px;
+      }
+      :root[data-theme="dark"] {
+        --bg: #000;
+        --surface: #000;
+        --ink: #fff0f4;
+        --muted: #c6aab2;
+        --line: #49343a;
+        --accent: #fb5578;
+        --accent-ink: #000;
+        --bar: #111;
+        --bad: #ff829c;
+        --ok: #60d6a5;
+      }
+      body {
+        background: linear-gradient(
+          135deg,
+          var(--bg),
+          var(--surface) 52%,
+          var(--bar)
+        );
+        background-attachment: fixed;
+      }
+      header {
+        background: var(--surface);
+      }
+      :root[data-theme="dark"] body {
+        background: #000;
+      }
+      .brand svg rect {
+        fill: url(#brand-gradient);
+      }
+      .bar {
+        max-width: 1120px;
+        padding-top: 0.8rem;
+        padding-bottom: 0.8rem;
+      }
+      main {
+        max-width: 920px;
+        padding-top: clamp(2rem, 6vh, 4rem);
+      }
+      h1 {
+        font-size: 2.8rem;
+        letter-spacing: 0;
+        line-height: 1.08;
+      }
+      .hero {
+        padding: clamp(1.25rem, 4vw, 2.5rem);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: linear-gradient(125deg, #fff0f3, #fff 58%, #ffe8ef);
+        animation: arrive 0.45s ease-out both;
+      }
+      :root[data-theme="dark"] .hero {
+        background: #000;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--accent);
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+      }
+      .eyebrow:before {
+        content: "";
+        width: 1.5rem;
+        height: 2px;
+        background: linear-gradient(90deg, #e11d48, #fb7185);
+      }
+      .lead {
+        max-width: 40rem;
+      }
+      .field input {
+        border-radius: 11px;
+        background: color-mix(in srgb, var(--surface) 94%, var(--bar));
+      }
+      .btn {
+        border-radius: 8px;
+        transition: border-color 0.16s ease;
+      }
+      .btn.primary {
+        background: linear-gradient(105deg, #e11d48, #f43f72 58%, #ec4899);
+        border-color: transparent;
+      }
+      .quick .btn {
+        color: var(--ink);
+      }
+      .opt:has(input:checked) {
+        background: color-mix(in srgb, var(--bar) 78%, var(--surface));
+      }
+      .card {
+        box-shadow: none;
+      }
+      .media {
+        align-items: start;
+      }
+      .thumb {
+        border-radius: 12px;
+      }
+      .status {
+        letter-spacing: 0.02em;
+      }
+      @keyframes arrive {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @media (max-width: 760px) {
+        .bar {
+          gap: 0.5rem;
+        }
+        main {
+          padding: 1.5rem 1rem 3rem;
+        }
+        .media {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .dl {
+          grid-template-columns: minmax(72px, 96px) minmax(0, 1fr);
+          gap: 0.75rem;
+        }
+        .dl img {
+          width: 100%;
+          max-width: 96px;
+        }
+        .res button {
+          grid-template-columns: minmax(88px, 120px) minmax(0, 1fr);
+          gap: 0.75rem;
+        }
+        .res img {
+          width: 100%;
+          max-width: 120px;
+        }
+      }
+      @media (max-width: 560px) {
+        .bar {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+        }
+        nav {
+          grid-column: 1/-1;
+          grid-row: 2;
+          width: 100%;
+          margin: 0;
+          justify-content: space-between;
+          overflow-x: auto;
+        }
+        nav a {
+          padding: 0.5rem 0.55rem;
+          white-space: nowrap;
+        }
+        #themeBtn {
+          grid-column: 2;
+          grid-row: 1;
+        }
+        h1 {
+          font-size: 2.2rem;
+        }
+        .hero {
+          padding: 1.25rem;
+          border-radius: 10px;
+        }
+        .field {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .field input {
+          grid-column: 1/-1;
+          width: 100%;
+          min-width: 0;
+        }
+        .field .btn {
+          width: 100%;
+          padding: 0 0.5rem;
+        }
+        .set label:has(> select),
+        .set label:has(> input[type="text"]),
+        .set label:has(> input[type="url"]) {
+          align-items: stretch;
+          flex-direction: column;
+          gap: 0.35rem;
+        }
+        .set select,
+        .set input[type="text"],
+        .set input[type="url"] {
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <a class="brand" href="#/"
+          ><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+            <defs>
+              <linearGradient id="brand-gradient">
+                <stop stop-color="#e11d48" />
+                <stop offset="1" stop-color="#ec4899" />
+              </linearGradient>
+            </defs>
+            <rect width="28" height="28" rx="7" fill="var(--accent)" />
+            <path
+              d="M14 6v11m0 0l-5-5m5 5l5-5M8 21h12"
+              stroke="var(--accent-ink)"
+              stroke-width="2.4"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+          >Downloader</a
+        >
+        <nav aria-label="Main">
+          <a href="#/" data-v="home">Home</a>
+          <a href="#/downloads" data-v="downloads"
+            >Downloads <span class="badge" id="nbadge" hidden></span
+          ></a>
+          <a href="#/history" data-v="history">History</a>
+          <a href="#/settings" data-v="settings">Settings</a>
+        </nav>
+        <button class="btn sm" id="themeBtn" aria-label="Change theme"></button>
+      </div>
+    </header>
+    <main id="view"></main>
+    <div id="toasts" role="status" aria-live="polite"></div>
+    <dialog id="dlg">
+      <form method="dialog">
+        <p id="dlgMsg"></p>
+        <div class="row" style="justify-content: flex-end">
+          <button class="btn sm" value="no">Cancel</button
+          ><button class="btn sm primary" value="yes">Confirm</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script>
+      "use strict";
+      /* ========================================================================
+       * Downloader frontend. It needs a service that implements this contract
+       * (base URL is set in Settings, or window.DOWNLOADER_API_BASE):
+       *   POST /api/search   {query}            -> {results:[{url,title,thumbnail,channel,duration}]}   (optional)
+       *   POST /api/analyze  {url}              -> {platform,title,channel,duration,thumbnail,views,
+       *                                             description,previewUrl?,formats:[{id,kind:"video"|"audio",
+       *                                             resolution?,container,bitrate?,size?}]}
+       *   POST /api/download {url,formatId}     -> {id}
+       *   GET  /api/download/:id                -> {id,status,downloaded,total,speed,eta,filename,fileUrl,
+       *                                             error,capabilities:{pause,resume}}
+       *   POST /api/download/:id/(pause|resume|cancel)
+       *   GET  /api/downloads                   -> [ same shape as above ]
+       * Errors: non-2xx JSON {code:"unsupported"|"unavailable", message?}.
+       * status: preparing|fetching|downloading|paused|processing|completed|failed|cancelled
+       * ====================================================================== */
+
+      // ---- Configuration ----
+      const CFG = {
+        version: "1.0.0",
+        pollMs: 1000,
+        cacheMs: 300000,
+        active: [
+          "preparing",
+          "fetching",
+          "downloading",
+          "paused",
+          "processing",
+        ],
+      };
+      const DEFAULTS = {
+        theme: "system",
+        defKind: "video",
+        defQuality: "best",
+        autoStart: false,
+        confirmDelete: true,
+        apiBase: "",
+      };
+      const MSG = {
+        invalid: "Please enter a valid supported URL.",
+        unsupported: "This platform is currently not supported.",
+        unavailable: "The requested media could not be retrieved.",
+        backend:
+          "Can't reach the downloader service. Start it with node server.js, then open http://localhost:3000.",
+        network:
+          "Connection failed. Check your internet connection and try again.",
+        failed: "The download could not be completed. Retry the download.",
+        nosearch:
+          "Search needs a service that provides /api/search. Paste a media URL instead.",
+      };
+
+      // ---- State ----
+      const $ = (s) => document.querySelector(s);
+      const load = (k, d) => {
+        try {
+          const v = localStorage.getItem(k);
+          return v ? JSON.parse(v) : d;
+        } catch {
+          return d;
+        }
+      };
+      const save = (k, v) => {
+        try {
+          localStorage.setItem(k, JSON.stringify(v));
+        } catch {
+          toast("Storage is full or blocked; changes may not persist.", true);
+        }
+      };
+      const state = {
+        settings: { ...DEFAULTS, ...load("dl.settings", {}) },
+        history: load("dl.history", []),
+        downloads: new Map(load("dl.active", []).map((d) => [d.id, d])),
+        analysis: null,
+        selected: null,
+        busy: false,
+        input: "",
+        hint: null,
+        results: null,
+      };
+      const cache = new Map();
+      let analyzeCtl = null,
+        polling = false;
+
+      // ---- Helpers ----
+      class AppError extends Error {
+        constructor(code, msg) {
+          super(msg || MSG[code] || MSG.backend);
+          this.code = code;
+        }
+      }
+      function h(tag, attrs, ...kids) {
+        const el = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs || {})) {
+          if (v == null || v === false) continue;
+          if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+          else if (k === "class") el.className = v;
+          else if (k in el && k !== "list") el[k] = v;
+          else el.setAttribute(k, v === true ? "" : v);
+        }
+        for (const c of kids.flat())
+          if (c != null && c !== false)
+            el.append(c.nodeType ? c : document.createTextNode(c));
+        return el;
+      }
+      const safeUrl = (u) => {
+        try {
+          const x = new URL(u);
+          return /^https?:$/.test(x.protocol) ? x.href : "";
+        } catch {
+          return "";
+        }
+      };
+      const num = (v) =>
+        Number.isFinite(+v) && v !== null && v !== "" ? +v : null;
+      function fmtBytes(b) {
+        b = num(b);
+        if (b == null) return "";
+        const u = ["B", "KB", "MB", "GB"];
+        let i = 0;
+        while (b >= 1024 && i < 3) {
+          b /= 1024;
+          i++;
+        }
+        return b.toFixed(i ? 1 : 0) + " " + u[i];
+      }
+      function fmtTime(s) {
+        s = num(s);
+        if (s == null) return "";
+        const hh = Math.floor(s / 3600),
+          m = Math.floor((s % 3600) / 60),
+          ss = Math.floor(s % 60);
+        return (
+          (hh ? hh + ":" + String(m).padStart(2, "0") : m) +
+          ":" +
+          String(ss).padStart(2, "0")
+        );
+      }
+      const fmtDate = (t) =>
+        new Date(t).toLocaleString([], {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+      function fmtLabel(f) {
+        return [
+          f.kind === "audio" ? "Audio" : f.resolution || "Video",
+          String(f.container || "").toUpperCase(),
+          f.bitrate ? f.bitrate + " kbps" : "",
+          fmtBytes(f.size),
+        ]
+          .filter(Boolean)
+          .join(" • ");
+      }
+
+      // ---- API ----
+      const base = () =>
+        (state.settings.apiBase || window.DOWNLOADER_API_BASE || "").replace(
+          /\/+$/,
+          "",
+        );
+      async function api(path, { method = "GET", body, signal } = {}) {
+        let res;
+        try {
+          res = await fetch(base() + path, {
+            method,
+            signal,
+            headers: body ? { "Content-Type": "application/json" } : {},
+            body: body ? JSON.stringify(body) : undefined,
+          });
+        } catch (e) {
+          if (e.name === "AbortError") throw e;
+          if (location.protocol === "file:")
+            throw new AppError(
+              "backend",
+              "Open Downloader from http://localhost:3000, not directly as a file.",
+            );
+          throw new AppError(navigator.onLine ? "backend" : "network");
+        }
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {}
+        if (!res.ok)
+          throw new AppError(
+            data && ["unsupported", "unavailable"].includes(data.code)
+              ? data.code
+              : res.status >= 500 || res.status === 404
+                ? "backend"
+                : "unavailable",
+            data && data.message,
+          );
+        if (data == null) throw new AppError("backend");
+        return data;
+      }
+      function cleanAnalysis(d, url) {
+        if (!d || typeof d.title !== "string" || !Array.isArray(d.formats))
+          throw new AppError("backend");
+        const formats = d.formats
+          .filter(
+            (f) =>
+              f &&
+              typeof f.id === "string" &&
+              ["video", "audio"].includes(f.kind),
+          )
+          .map((f) => ({
+            id: f.id,
+            kind: f.kind,
+            resolution: String(f.resolution || ""),
+            container: String(f.container || ""),
+            bitrate: num(f.bitrate),
+            size: num(f.size),
+          }));
+        if (!formats.length) throw new AppError("unavailable");
+        return {
+          url,
+          platform: String(d.platform || ""),
+          title: d.title,
+          channel: String(d.channel || ""),
+          duration: num(d.duration),
+          thumbnail: safeUrl(d.thumbnail),
+          views: num(d.views),
+          description: String(d.description || "").slice(0, 400),
+          previewUrl: safeUrl(d.previewUrl),
+          formats,
+        };
+      }
+      function cleanStatus(d) {
+        if (!d || typeof d.status !== "string") throw new AppError("backend");
+        const caps = d.capabilities || {};
+        let fileUrl = "";
+        if (d.fileUrl) {
+          try {
+            const x = new URL(d.fileUrl, base() || location.href);
+            if (/^https?:$/.test(x.protocol)) fileUrl = x.href;
+          } catch {}
+        }
+        return {
+          status: d.status,
+          downloaded: num(d.downloaded),
+          total: num(d.total),
+          speed: num(d.speed),
+          eta: num(d.eta),
+          filename: d.filename ? String(d.filename) : null,
+          fileUrl,
+          error: d.error ? String(d.error) : null,
+          caps: { pause: !!caps.pause, resume: !!caps.resume },
+        };
+      }
+
+      // ---- URL Validation ----
+      function classify(text) {
+        const t = text.trim();
+        if (!t) return { type: "empty" };
+        if (/^https?:\/\//i.test(t) || /^[\w-]+(\.[\w-]+)+\/\S*$/.test(t)) {
+          const u = safeUrl(/^https?:/i.test(t) ? t : "https://" + t);
+          return u && !/\s/.test(t)
+            ? { type: "url", url: u }
+            : { type: "invalid" };
+        }
+        return { type: "search", query: t };
+      }
+
+      // ---- Search & Media Analysis ----
+      async function submit() {
+        const c = classify(state.input);
+        state.results = null;
+        if (c.type === "empty")
+          return setHint("Paste a media URL or type a search.", true);
+        if (c.type === "invalid") return setHint(MSG.invalid, true);
+        if (c.type === "search") return runSearch(c.query);
+        return analyze(c.url);
+      }
+      async function runSearch(q) {
+        state.analysis = null;
+        state.busy = "search";
+        setHint("Searching…");
+        renderHome();
+        try {
+          const d = await api("/api/search", {
+            method: "POST",
+            body: { query: q },
+          });
+          state.results = (Array.isArray(d.results) ? d.results : [])
+            .map((r) => ({
+              url: safeUrl(r.url),
+              title: String(r.title || ""),
+              thumbnail: safeUrl(r.thumbnail),
+              channel: String(r.channel || ""),
+              duration: num(r.duration),
+            }))
+            .filter((r) => r.url && r.title);
+          setHint(state.results.length ? "" : "No results found.");
+        } catch (e) {
+          if (e.name !== "AbortError")
+            setHint(e.code === "backend" ? MSG.nosearch : e.message, true);
+        }
+        state.busy = false;
+        renderHome();
+      }
+      async function analyze(url) {
+        const hit = cache.get(url);
+        if (hit && Date.now() - hit.t < CFG.cacheMs) {
+          showAnalysis(hit.d);
+          return;
+        }
+        if (analyzeCtl) analyzeCtl.abort();
+        analyzeCtl = new AbortController();
+        state.busy = "analyze";
+        state.analysis = null;
+        setHint("");
+        renderHome();
+        try {
+          const d = cleanAnalysis(
+            await api("/api/analyze", {
+              method: "POST",
+              body: { url },
+              signal: analyzeCtl.signal,
+            }),
+            url,
+          );
+          cache.set(url, { t: Date.now(), d });
+          showAnalysis(d);
+        } catch (e) {
+          if (e.name === "AbortError") return;
+          state.busy = false;
+          setHint(e.message, true);
+          renderHome();
+        }
+      }
+      function showAnalysis(d) {
+        state.busy = false;
+        state.analysis = d;
+        state.selected = pickDefault(d);
+        setHint("");
+        renderHome();
+        if (state.settings.autoStart && state.selected)
+          startDownload(d, state.selected);
+      }
+      function pickDefault(d) {
+        const { defKind, defQuality } = state.settings;
+        const res = (f) => parseInt(f.resolution) || 0;
+        const vids = d.formats
+            .filter((f) => f.kind === "video")
+            .sort((a, b) => res(b) - res(a)),
+          auds = d.formats.filter((f) => f.kind === "audio");
+        if (defKind === "audio" && auds.length) return auds[0].id;
+        if (vids.length) {
+          const want = parseInt(defQuality);
+          return (
+            defQuality === "best"
+              ? vids[0]
+              : vids.find((f) => res(f) <= want) || vids[vids.length - 1]
+          ).id;
+        }
+        return auds[0] ? auds[0].id : null;
+      }
+
+      // ---- Download Manager ----
+      async function startDownload(a, formatId, redo) {
+        const f = a.formats.find((x) => x.id === formatId);
+        if (!f) return toast("Pick a format first.", true);
+        try {
+          const r = await api("/api/download", {
+            method: "POST",
+            body: { url: a.url, formatId },
+          });
+          if (!r || typeof r.id !== "string") throw new AppError("backend");
+          state.downloads.set(r.id, {
+            id: r.id,
+            url: a.url,
+            formatId,
+            title: a.title,
+            thumb: a.thumbnail,
+            kind: f.kind,
+            resolution: f.resolution,
+            container: f.container,
+            status: "preparing",
+            downloaded: null,
+            total: f.size,
+            speed: null,
+            eta: null,
+            filename: null,
+            fileUrl: "",
+            error: null,
+            caps: { pause: false, resume: false },
+            t: Date.now(),
+          });
+          persistActive();
+          toast("Download started.");
+          if (!redo) location.hash = "#/downloads";
+          else render();
+          schedulePoll();
+        } catch (e) {
+          toast(e.message, true);
+        }
+      }
+      async function control(d, action) {
+        try {
+          await api(`/api/download/${encodeURIComponent(d.id)}/${action}`, {
+            method: "POST",
+          });
+          await pollOne(d);
+        } catch (e) {
+          toast(e.message, true);
+        }
+      }
+      async function retry(d) {
+        state.downloads.delete(d.id);
+        persistActive();
+        await startDownload(
+          {
+            url: d.url,
+            title: d.title,
+            thumbnail: d.thumb,
+            formats: [
+              {
+                id: d.formatId,
+                kind: d.kind,
+                resolution: d.resolution,
+                container: d.container,
+                size: d.total,
+              },
+            ],
+          },
+          d.formatId,
+          true,
+        );
+      }
+      async function pollOne(d) {
+        try {
+          const s = cleanStatus(
+            await api("/api/download/" + encodeURIComponent(d.id)),
+          );
+          const prev = d.status;
+          Object.assign(d, s);
+          if (s.status === "failed" && !d.error) d.error = MSG.failed;
+          if (prev !== s.status && ["completed", "failed"].includes(s.status))
+            recordHistory(s.status === "completed" ? { ...d, fileUrl: "" } : d);
+          if (s.status === "completed") {
+            state.downloads.delete(d.id);
+            if (prev !== "completed" && s.fileUrl) {
+              const url = new URL(s.fileUrl);
+              url.searchParams.set("removeAfterDownload", "1");
+              const link = h("a", {
+                href: url.href,
+                download: s.filename || d.title,
+              });
+              document.body.append(link);
+              link.click();
+              link.remove();
+            }
+            toast("Download completed: " + d.title);
+          }
+        } catch (e) {
+          if (e.code === "unavailable") {
+            d.status = "failed";
+            d.error = "The service no longer has this download.";
+            recordHistory(d);
+          } else if (!d.warned) {
+            d.warned = true;
+            toast(e.message, true);
+          }
+        }
+      }
+      function schedulePoll() {
+        if (polling) return;
+        polling = true;
+        (async function loop() {
+          const act = [...state.downloads.values()].filter((d) =>
+            CFG.active.includes(d.status),
+          );
+          if (!act.length) {
+            polling = false;
+            return;
+          }
+          await Promise.all(act.map(pollOne));
+          persistActive();
+          updateDownloads();
+          setTimeout(loop, CFG.pollMs);
+        })();
+      }
+      const persistActive = () =>
+        save("dl.active", [...state.downloads.values()]);
+
+      // ---- History ----
+      function recordHistory(d) {
+        state.history.unshift({
+          id: d.id + ":" + Date.now(),
+          title: d.title,
+          thumb: d.thumb,
+          filename: d.filename,
+          kind: d.kind,
+          resolution: d.resolution,
+          container: d.container,
+          size: d.total,
+          date: Date.now(),
+          status: d.status,
+          url: d.url,
+          formatId: d.formatId,
+          fileUrl: d.fileUrl,
+        });
+        state.history = state.history.slice(0, 500);
+        save("dl.history", state.history);
+      }
+      async function confirmThen(msg, fn) {
+        if (state.settings.confirmDelete) {
+          $("#dlgMsg").textContent = msg;
+          const dlg = $("#dlg");
+          dlg.returnValue = "";
+          dlg.showModal();
+          await new Promise((r) =>
+            dlg.addEventListener("close", r, { once: true }),
+          );
+          if (dlg.returnValue !== "yes") return;
+        }
+        fn();
+      }
+
+      // ---- Notifications ----
+      function toast(msg, err) {
+        const t = h("div", { class: "toast" + (err ? " err" : "") }, msg);
+        $("#toasts").append(t);
+        setTimeout(() => t.remove(), 4500);
+      }
+
+      // ---- Theme ----
+      const mq = matchMedia("(prefers-color-scheme: dark)");
+      function applyTheme() {
+        const t = state.settings.theme;
+        document.documentElement.dataset.theme =
+          t === "system" ? (mq.matches ? "dark" : "light") : t;
+        $("#themeBtn").textContent =
+          "Theme: " + t[0].toUpperCase() + t.slice(1);
+      }
+      mq.addEventListener("change", applyTheme);
+      function setSetting(k, v) {
+        state.settings[k] = v;
+        save("dl.settings", state.settings);
+        if (k === "theme") applyTheme();
+      }
+
+      // ---- UI Rendering ----
+      function setHint(msg, err) {
+        state.hint = msg ? { msg, err } : null;
+        const el = $("#hint");
+        if (el) {
+          el.textContent = msg || "";
+          el.className = "hint" + (err ? " err" : "");
+        }
+      }
+      const empty = (t, s, ...acts) =>
+        h(
+          "div",
+          { class: "empty" },
+          h("strong", {}, t),
+          s,
+          acts.length
+            ? h(
+                "div",
+                { class: "quick", style: "justify-content:center" },
+                acts,
+              )
+            : null,
+        );
+      const go = (label, hash) =>
+        h(
+          "a",
+          {
+            class: "btn sm",
+            href: hash,
+            style:
+              "display:inline-flex;align-items:center;text-decoration:none",
+          },
+          label,
+        );
+
+      function searchBox() {
+        const input = h("input", {
+          id: "q",
+          type: "text",
+          value: state.input,
+          placeholder: "Paste a media URL or search",
+          "aria-label": "Media URL or search",
+          autocomplete: "off",
+          inputMode: "url",
+          oninput: (e) => {
+            state.input = e.target.value;
+            clearTimeout(input._t);
+            input._t = setTimeout(() => {
+              const c = classify(state.input);
+              setHint(
+                c.type === "invalid" ? MSG.invalid : "",
+                c.type === "invalid",
+              );
+            }, 300);
+          },
+          onkeydown: (e) => e.key === "Enter" && submit(),
+        });
+        return h(
+          "div",
+          {},
+          h(
+            "div",
+            { class: "field" },
+            input,
+            h(
+              "button",
+              {
+                class: "btn",
+                onclick: async () => {
+                  try {
+                    state.input = await navigator.clipboard.readText();
+                    input.value = state.input;
+                    input.focus();
+                  } catch {
+                    toast(
+                      "Clipboard access was blocked. Paste with Ctrl+V instead.",
+                      true,
+                    );
+                  }
+                },
+              },
+              "Paste",
+            ),
+            h(
+              "button",
+              {
+                class: "btn",
+                onclick: () => {
+                  state.input = "";
+                  state.analysis = null;
+                  state.results = null;
+                  setHint("");
+                  renderHome();
+                  $("#q").focus();
+                },
+              },
+              "Clear",
+            ),
+            h(
+              "button",
+              { class: "btn primary", disabled: !!state.busy, onclick: submit },
+              state.busy ? "Working…" : "Analyze",
+            ),
+          ),
+          h(
+            "p",
+            {
+              id: "hint",
+              class: "hint" + (state.hint && state.hint.err ? " err" : ""),
+              role: "alert",
+            },
+            state.hint ? state.hint.msg : "",
+          ),
+        );
+      }
+      function renderHome() {
+        const v = $("#view"),
+          a = state.analysis,
+          recent = state.history
+            .filter((x) => x.status === "completed")
+            .slice(0, 4);
+        v.replaceChildren(
+          h(
+            "section",
+            { class: "hero" },
+            h("div", { class: "eyebrow" }, "MEDIA DOWNLOAD STUDIO"),
+            h("h1", {}, "Download Your Media"),
+            h(
+              "p",
+              { class: "lead" },
+              "Paste a link, choose your format, and keep every download in one place.",
+            ),
+            searchBox(),
+          ),
+        );
+        if (state.busy === "analyze")
+          v.append(
+            h(
+              "div",
+              { class: "media", "aria-label": "Loading" },
+              h("div", { class: "skel", style: "aspect-ratio:16/9" }),
+              h(
+                "div",
+                {},
+                h("div", {
+                  class: "skel",
+                  style: "height:28px;margin-bottom:12px",
+                }),
+                h("div", {
+                  class: "skel",
+                  style: "height:90px;margin-bottom:12px",
+                }),
+                h("div", { class: "skel", style: "height:140px" }),
+              ),
+            ),
+          );
+        else if (a) v.append(mediaPanel(a));
+        else if (state.results)
+          v.append(
+            h("h2", {}, "Results"),
+            state.results.length
+              ? h(
+                  "div",
+                  { class: "res" },
+                  state.results.map((r) =>
+                    h(
+                      "button",
+                      {
+                        class: "card",
+                        onclick: () => {
+                          state.input = r.url;
+                          analyze(r.url);
+                        },
+                      },
+                      r.thumbnail
+                        ? h("img", {
+                            src: r.thumbnail,
+                            alt: "",
+                            loading: "lazy",
+                            referrerPolicy: "no-referrer",
+                          })
+                        : h("div", { class: "skel" }),
+                      h(
+                        "div",
+                        {},
+                        h("div", { class: "nm" }, r.title),
+                        h(
+                          "div",
+                          { class: "meta" },
+                          [r.channel, fmtTime(r.duration)]
+                            .filter(Boolean)
+                            .join(" • "),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : empty("No results", "Try different words or paste a URL."),
+          );
+        else {
+          v.append(
+            h(
+              "div",
+              { class: "quick" },
+              go("Downloads", "#/downloads"),
+              go("History", "#/history"),
+              go("Settings", "#/settings"),
+            ),
+            h("h2", {}, "Recent downloads"),
+            recent.length
+              ? h("div", {}, recent.map(historyItem))
+              : empty(
+                  "Nothing downloaded yet",
+                  "Paste a URL above to get started.",
+                ),
+          );
+        }
+      }
+      function mediaPanel(a) {
+        const group = (kind, title) => {
+          const fs = a.formats.filter((f) => f.kind === kind);
+          return fs.length
+            ? [
+                h("h3", {}, title),
+                ...fs.map((f) =>
+                  h(
+                    "label",
+                    { class: "opt" },
+                    h("input", {
+                      type: "radio",
+                      name: "fmt",
+                      value: f.id,
+                      checked: f.id === state.selected,
+                      onchange: () => (state.selected = f.id),
+                    }),
+                    fmtLabel(f),
+                  ),
+                ),
+              ]
+            : [];
+        };
+        const preview = a.previewUrl
+          ? h(a.formats.every((f) => f.kind === "audio") ? "audio" : "video", {
+              class: "thumb",
+              controls: true,
+              preload: "none",
+              poster: a.thumbnail || null,
+              src: a.previewUrl,
+            })
+          : a.thumbnail
+            ? h("img", {
+                class: "thumb",
+                src: a.thumbnail,
+                alt: "Thumbnail for " + a.title,
+                referrerPolicy: "no-referrer",
+              })
+            : h("div", { class: "thumb" });
+        return h(
+          "section",
+          { class: "media", "aria-label": "Media information" },
+          h(
+            "div",
+            {},
+            preview,
+            h("div", { class: "title" }, a.title),
+            h(
+              "div",
+              { class: "meta" },
+              [
+                a.channel,
+                a.platform,
+                fmtTime(a.duration),
+                a.views != null ? a.views.toLocaleString() + " views" : "",
+              ]
+                .filter(Boolean)
+                .join(" • "),
+            ),
+            a.description ? h("p", { class: "desc" }, a.description) : null,
+          ),
+          h(
+            "div",
+            { class: "card" },
+            h("strong", {}, "Choose a format"),
+            h(
+              "div",
+              { class: "opts", role: "radiogroup" },
+              group("video", "Video"),
+              group("audio", "Audio"),
+            ),
+            h(
+              "button",
+              {
+                class: "btn primary",
+                style: "width:100%",
+                onclick: () => startDownload(a, state.selected),
+              },
+              "Download",
+            ),
+          ),
+        );
+      }
+      // Downloads view with keyed element reuse so progress updates don't rebuild the DOM
+      const dlEls = new Map();
+      function dlEl(d) {
+        const el = h(
+          "article",
+          { class: "card dl" },
+          h("img", { alt: "", loading: "lazy", referrerPolicy: "no-referrer" }),
+          h(
+            "div",
+            {},
+            h("div", { class: "nm" }),
+            h("div", { class: "meta m1" }),
+            h("div", { class: "prog" }, h("i")),
+            h("div", { class: "meta m2" }),
+            h("div", { class: "row acts", style: "margin-top:.4rem" }),
+          ),
+        );
+        el.querySelector("img").src = d.thumb || "";
+        return el;
+      }
+      function displayValue(value) {
+        if (value == null) return "";
+        const text = String(value).trim();
+        return /^(null|undefined)$/i.test(text) ? "" : text;
+      }
+      function patchDl(el, d) {
+        const act = CFG.active.includes(d.status),
+          pct =
+            d.total && d.downloaded != null
+              ? Math.min(100, (d.downloaded / d.total) * 100)
+              : null;
+        el.querySelector(".nm").textContent =
+          displayValue(d.filename) || displayValue(d.title) || "Download";
+        el.querySelector(".m1").textContent = [
+          d.kind === "audio" ? "Audio" : displayValue(d.resolution),
+          displayValue(d.container).toUpperCase(),
+          fmtBytes(d.total),
+        ]
+          .filter(Boolean)
+          .join(" • ");
+        const bar = el.querySelector(".prog");
+        bar.className =
+          "prog" + (pct == null && act && d.status !== "paused" ? " ind" : "");
+        bar.firstChild.style.width = pct == null ? "" : pct + "%";
+        const m2 = el.querySelector(".m2");
+        m2.replaceChildren(
+          h(
+            "span",
+            { class: "status " + d.status },
+            d.status[0].toUpperCase() + d.status.slice(1),
+          ),
+          " " +
+            [
+              pct != null ? pct.toFixed(0) + "%" : "",
+              d.downloaded != null
+                ? fmtBytes(d.downloaded) +
+                  (d.total ? " of " + fmtBytes(d.total) : "")
+                : "",
+              d.speed ? fmtBytes(d.speed) + "/s" : "",
+              d.eta ? fmtTime(d.eta) + " left" : "",
+              d.status === "failed" ? displayValue(d.error) : "",
+            ]
+              .filter(Boolean)
+              .join(" • "),
+        );
+        const b = (t, fn, cls) =>
+          h("button", { class: "btn sm " + (cls || ""), onclick: fn }, t);
+        el.querySelector(".acts").replaceChildren(
+          d.status === "downloading" && d.caps.pause
+            ? b("Pause", () => control(d, "pause"))
+            : null,
+          d.status === "paused"
+            ? b("Resume", () => control(d, "resume"))
+            : null,
+          act
+            ? b("Cancel download", () => control(d, "cancel"), "danger")
+            : null,
+          ["failed", "cancelled"].includes(d.status)
+            ? b("Retry", () => retry(d), "primary")
+            : null,
+          ["failed", "cancelled"].includes(d.status)
+            ? b("Remove", () => {
+                state.downloads.delete(d.id);
+                persistActive();
+                updateDownloads();
+              })
+            : null,
+        );
+      }
+      function updateDownloads() {
+        const n = [...state.downloads.values()].filter((d) =>
+            CFG.active.includes(d.status),
+          ).length,
+          nb = $("#nbadge");
+        nb.hidden = !n;
+        nb.textContent = n;
+        if (state.view !== "downloads") return;
+        const box = $("#dlbox");
+        if (!box) return;
+        const items = [...state.downloads.values()].sort((a, b) => b.t - a.t);
+        for (const [id, el] of dlEls)
+          if (!state.downloads.has(id)) {
+            el.remove();
+            dlEls.delete(id);
+          }
+        items.forEach((d) => {
+          let el = dlEls.get(d.id);
+          if (!el) {
+            el = dlEl(d);
+            dlEls.set(d.id, el);
+          }
+          patchDl(el, d);
+          box.append(el);
+        });
+        $("#dlempty").hidden = items.length > 0;
+      }
+      function renderDownloads() {
+        dlEls.clear();
+        $("#view").replaceChildren(
+          h("h1", {}, "Downloads"),
+          h(
+            "p",
+            { class: "lead" },
+            "Active and unfinished downloads. Finished files move to History.",
+          ),
+          h("div", { id: "dlbox" }),
+          h(
+            "div",
+            { id: "dlempty" },
+            empty(
+              "No active downloads",
+              "Analyze a URL on Home to start one.",
+              go("Go to Home", "#/"),
+            ),
+          ),
+        );
+        updateDownloads();
+      }
+      function historyItem(x, withDelete) {
+        const share =
+          navigator.share && x.fileUrl
+            ? h(
+                "button",
+                {
+                  class: "btn sm",
+                  onclick: () =>
+                    navigator
+                      .share({ title: x.title, url: x.fileUrl })
+                      .catch(() => {}),
+                },
+                "Share",
+              )
+            : null;
+        return h(
+          "article",
+          { class: "card dl" },
+          h("img", {
+            src: x.thumb || "",
+            alt: "",
+            loading: "lazy",
+            referrerPolicy: "no-referrer",
+          }),
+          h(
+            "div",
+            {},
+            h("div", { class: "nm" }, x.filename || x.title),
+            h(
+              "div",
+              { class: "meta" },
+              [
+                x.kind === "audio" ? "Audio" : x.resolution,
+                String(x.container || "").toUpperCase(),
+                fmtBytes(x.size),
+                fmtDate(x.date),
+              ]
+                .filter(Boolean)
+                .join(" • "),
+            ),
+            h(
+              "div",
+              { class: "status " + x.status },
+              x.status[0].toUpperCase() + x.status.slice(1),
+            ),
+            h(
+              "div",
+              { class: "row", style: "margin-top:.4rem" },
+              x.fileUrl && x.status === "completed"
+                ? h(
+                    "a",
+                    {
+                      class: "btn sm",
+                      href: x.fileUrl,
+                      target: "_blank",
+                      rel: "noopener noreferrer",
+                      style:
+                        "display:inline-flex;align-items:center;text-decoration:none",
+                    },
+                    "Open",
+                  )
+                : null,
+              share,
+              h(
+                "button",
+                {
+                  class: "btn sm",
+                  onclick: () =>
+                    startDownload(
+                      {
+                        url: x.url,
+                        title: x.title,
+                        thumbnail: x.thumb,
+                        formats: [
+                          {
+                            id: x.formatId,
+                            kind: x.kind,
+                            resolution: x.resolution,
+                            container: x.container,
+                            size: x.size,
+                          },
+                        ],
+                      },
+                      x.formatId,
+                    ),
+                },
+                "Re-download",
+              ),
+              withDelete
+                ? h(
+                    "button",
+                    {
+                      class: "btn sm danger",
+                      onclick: () =>
+                        confirmThen("Delete this entry from history?", () => {
+                          state.history = state.history.filter(
+                            (y) => y.id !== x.id,
+                          );
+                          save("dl.history", state.history);
+                          renderHistory();
+                        }),
+                    },
+                    "Delete",
+                  )
+                : null,
+            ),
+          ),
+        );
+      }
+      function renderHistory(q = "") {
+        const v = $("#view"),
+          list = h("div", {}),
+          items = state.history.filter((x) =>
+            (x.title + " " + (x.filename || ""))
+              .toLowerCase()
+              .includes(q.toLowerCase()),
+          );
+        list.append(
+          ...(items.length
+            ? items.map((x) => historyItem(x, true))
+            : [
+                empty(
+                  q ? "No matches" : "History is empty",
+                  q
+                    ? "Try another search."
+                    : "Completed and failed downloads appear here.",
+                ),
+              ]),
+        );
+        v.replaceChildren(
+          h("h1", {}, "History"),
+          h(
+            "div",
+            { class: "field", style: "margin-bottom:1rem" },
+            h("input", {
+              type: "search",
+              value: q,
+              placeholder: "Search history",
+              "aria-label": "Search history",
+              oninput: (e) => {
+                const val = e.target.value;
+                clearTimeout(renderHistory.t);
+                renderHistory.t = setTimeout(() => {
+                  renderHistory(val);
+                  const i = $("#view input");
+                  i.focus();
+                  i.setSelectionRange(val.length, val.length);
+                }, 250);
+              },
+            }),
+            h(
+              "button",
+              {
+                class: "btn danger",
+                disabled: !state.history.length,
+                onclick: () =>
+                  confirmThen("Clear all download history?", () => {
+                    state.history = [];
+                    save("dl.history", []);
+                    renderHistory();
+                  }),
+              },
+              "Clear history",
+            ),
+          ),
+          list,
+        );
+      }
+      function renderSettings() {
+        const S = state.settings,
+          sel = (k, opts) =>
+            h(
+              "select",
+              { onchange: (e) => setSetting(k, e.target.value) },
+              opts.map(([v, l]) =>
+                h("option", { value: v, selected: S[k] === v }, l),
+              ),
+            );
+        const chk = (k, l) =>
+          h(
+            "label",
+            {},
+            l,
+            h("input", {
+              type: "checkbox",
+              checked: S[k],
+              onchange: (e) => setSetting(k, e.target.checked),
+            }),
+          );
+        $("#view").replaceChildren(
+          h("h1", {}, "Settings"),
+          h("h2", {}, "Service"),
+          h(
+            "div",
+            { class: "card set" },
+            h(
+              "label",
+              {},
+              "Downloader service address",
+              h("input", {
+                type: "url",
+                value: S.apiBase,
+                placeholder: "Same origin",
+                onchange: (e) => setSetting("apiBase", e.target.value.trim()),
+              }),
+            ),
+            h(
+              "div",
+              { class: "row" },
+              h(
+                "button",
+                {
+                  class: "btn sm",
+                  onclick: async () => {
+                    try {
+                      const d = await api("/api/health");
+                      toast(
+                        !d.ready
+                          ? "Service is reachable, but yt-dlp is missing. Install yt-dlp and restart the service."
+                          : !d.dependencies.ffmpeg
+                            ? "Service is ready; ffmpeg is missing, so some formats may fail."
+                            : "Service and download tools are ready.",
+                        !d.ready || !d.dependencies.ffmpeg,
+                      );
+                    } catch (e) {
+                      toast(e.message, true);
+                    }
+                  },
+                },
+                "Test connection",
+              ),
+            ),
+          ),
+          h("h2", {}, "Downloads"),
+          h(
+            "div",
+            { class: "card set" },
+            h(
+              "label",
+              {},
+              "Default format",
+              sel("defKind", [
+                ["video", "Video"],
+                ["audio", "Audio"],
+              ]),
+            ),
+            h(
+              "label",
+              {},
+              "Default quality",
+              sel("defQuality", [
+                ["best", "Highest available"],
+                ["1080", "1080p"],
+                ["720", "720p"],
+                ["480", "480p"],
+                ["360", "360p"],
+              ]),
+            ),
+            h(
+              "p",
+              { class: "meta", style: "margin:0" },
+              "Files are saved by your browser into its download folder. A web page can't choose or change that location.",
+            ),
+          ),
+          h("h2", {}, "Appearance"),
+          h(
+            "div",
+            { class: "card set" },
+            h(
+              "label",
+              {},
+              "Theme",
+              sel("theme", [
+                ["system", "System"],
+                ["light", "Light"],
+                ["dark", "Dark"],
+              ]),
+            ),
+          ),
+          h("h2", {}, "Behavior"),
+          h(
+            "div",
+            { class: "card set" },
+            chk("autoStart", "Start download right after analyzing"),
+            chk("confirmDelete", "Confirm before deleting"),
+            h(
+              "div",
+              {},
+              h(
+                "button",
+                {
+                  class: "btn sm danger",
+                  onclick: () =>
+                    confirmThen("Clear all download history?", () => {
+                      state.history = [];
+                      save("dl.history", []);
+                      toast("History cleared.");
+                    }),
+                },
+                "Clear history",
+              ),
+            ),
+          ),
+          h("h2", {}, "About"),
+          h(
+            "div",
+            { class: "card meta" },
+            `Downloader ${CFG.version}. Plain HTML, CSS and JavaScript. Media analysis and downloading are handled by the service you connect; only download content you own or have permission to save. Settings and history stay in this browser's local storage, and Downloader sends only the URLs you submit to your service.`,
+          ),
+        );
+      }
+
+      // ---- Event Handlers / Router ----
+      function render() {
+        const view = location.hash.replace(/^#\/?/, "") || "home";
+        state.view = ["downloads", "history", "settings"].includes(view)
+          ? view
+          : "home";
+        document
+          .querySelectorAll("nav a")
+          .forEach(
+            (a) =>
+              a.toggleAttribute("aria-current", a.dataset.v === state.view) ||
+              a.removeAttribute("aria-current"),
+          );
+        document
+          .querySelectorAll("nav a")
+          .forEach((a) =>
+            a.dataset.v === state.view
+              ? a.setAttribute("aria-current", "page")
+              : a.removeAttribute("aria-current"),
+          );
+        ({
+          home: renderHome,
+          downloads: renderDownloads,
+          history: () => renderHistory(),
+          settings: renderSettings,
+        })[state.view]();
+      }
+      $("#themeBtn").addEventListener("click", () =>
+        setSetting(
+          "theme",
+          { system: "light", light: "dark", dark: "system" }[
+            state.settings.theme
+          ],
+        ),
+      );
+      addEventListener("hashchange", render);
+      addEventListener("online", () => toast("Back online."));
+
+      // ---- Initialization ----
+      applyTheme();
+      render();
+      updateDownloads();
+      schedulePoll();
+    </script>
+  </body>
+</html>
